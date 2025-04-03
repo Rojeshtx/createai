@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini AI Chatbot</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4285f4;
+            --secondary: #34a853;
+            --accent: #ea4335;
+            --light: #f8f9fa;
+            --dark: #202124;
+            --gray: #5f6368;
+            --light-gray: #e8eaed;
+            --shadow: 0 4px 12px rgba(0,0,0,0.1);
+            --radius: 16px;
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Google Sans', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .chat-container {
+            width: 100%;
+            max-width: 900px;
+            height: 90vh;
+            max-height: 800px;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+        
+        .chat-header {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .chat-header h1 {
+            font-size: 1.8rem;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background-color: var(--light);
+        }
+        
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            line-height: 1.5;
+            position: relative;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .user-message {
+            align-self: flex-end;
+            background-color: var(--primary);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+        
+        .bot-message {
+            align-self: flex-start;
+            background-color: white;
+            color: var(--dark);
+            border: 1px solid var(--light-gray);
+            border-bottom-left-radius: 5px;
+            box-shadow: var(--shadow);
+        }
+        
+        .bot-message::before {
+            content: 'Gemini';
+            display: block;
+            font-size: 0.7rem;
+            color: var(--gray);
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .user-message::before {
+            content: attr(data-user);
+            display: block;
+            font-size: 0.7rem;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .chat-input-container {
+            display: flex;
+            padding: 15px;
+            background: white;
+            border-top: 1px solid var(--light-gray);
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid var(--light-gray);
+            border-radius: 24px;
+            font-size: 1rem;
+            outline: none;
+            transition: var(--transition);
+        }
+        
+        .chat-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(66,133,244,0.2);
+        }
+        
+        .action-button {
+            background-color: white;
+            color: var(--gray);
+            border: 1px solid var(--light-gray);
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: var(--transition);
+        }
+        
+        .action-button:hover {
+            background-color: var(--light-gray);
+            transform: scale(1.05);
+        }
+        
+        .action-button.active {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .send-button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: var(--transition);
+        }
+        
+        .send-button:hover {
+            background-color: #3367d6;
+            transform: scale(1.05);
+        }
+        
+        .send-button:disabled {
+            background-color: var(--light-gray);
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .welcome-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            z-index: 10;
+            text-align: center;
+        }
+        
+        .welcome-screen h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+        
+        .input-group {
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 15px;
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid var(--light-gray);
+            border-radius: 24px;
+            font-size: 1rem;
+            margin-bottom: 10px;
+            outline: none;
+            transition: var(--transition);
+        }
+        
+        .input-field:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(66,133,244,0.2);
+        }
+        
+        .start-button {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 24px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(66,133,244,0.2);
+        }
+        
+        .typing-indicator {
+            display: flex;
+            padding: 12px 16px;
+            background: white;
+            border-radius: var(--radius);
+            border: 1px solid var(--light-gray);
+            box-shadow: var(--shadow);
+            align-self: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--gray);
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: typingAnimation 1.4s infinite ease-in-out;
+        }
+        
+        @keyframes typingAnimation {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+        
+        .message-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            justify-content: flex-end;
+        }
+        
+        .action-icon {
+            background: none;
+            border: none;
+            color: var(--gray);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+        
+        .action-icon:hover {
+            color: var(--primary);
+            transform: scale(1.1);
+        }
+        
+        .action-icon.active {
+            color: var(--accent);
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .preview-image {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: block;
+        }
+        
+        .api-info {
+            background: #e8f0fe;
+            padding: 10px;
+            border-radius: var(--radius);
+            margin-top: 20px;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+        
+        @media (max-width: 600px) {
+            .chat-container {
+                height: 95vh;
+                max-height: none;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>Gemini AI Chatbot</h1>
+            <p>Powered by Google AI Studio</p>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <!-- Messages will appear here -->
+        </div>
+        
+        <div class="chat-input-container">
+            <button class="action-button" id="imageButton" title="Upload Image">
+                <i class="fas fa-camera"></i>
+            </button>
+            <input type="file" id="fileInput" accept="image/*">
+            
+            <button class="action-button" id="micButton" title="Voice Input">
+                <i class="fas fa-microphone"></i>
+            </button>
+            
+            <input type="text" class="chat-input" id="userInput" placeholder="Type your message..." disabled>
+            
+            <button class="send-button" id="sendButton" disabled>
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+        
+        <div class="welcome-screen" id="welcomeScreen">
+            <h2>Welcome to Gemini AI</h2>
+            <p>Enter your details to start chatting with AI</p>
+            
+            <div class="input-group">
+                <input type="text" class="input-field" id="nameInput" placeholder="Your name">
+                <input type="text" class="input-field" id="apiKeyInput" placeholder="Google AI Studio API key">
+            </div>
+            
+            <div class="api-info">
+                <p>Get your API key from <a href="https://aistudio.google.com" target="_blank">Google AI Studio</a></p>
+            </div>
+            
+            <button class="start-button" id="startButton">
+                <i class="fas fa-robot"></i> Start Chatting
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const welcomeScreen = document.getElementById('welcomeScreen');
+            const nameInput = document.getElementById('nameInput');
+            const apiKeyInput = document.getElementById('apiKeyInput');
+            const startButton = document.getElementById('startButton');
+            const chatMessages = document.getElementById('chatMessages');
+            const userInput = document.getElementById('userInput');
+            const sendButton = document.getElementById('sendButton');
+            const imageButton = document.getElementById('imageButton');
+            const fileInput = document.getElementById('fileInput');
+            const micButton = document.getElementById('micButton');
+            
+            // Variables
+            let apiKey = '';
+            let userName = '';
+            let chatHistory = [];
+            let recognition;
+            let isListening = false;
+            let selectedImage = null;
+            let currentSpeech = null;
+            
+            // Model configuration
+            const GEMINI_MODEL = "gemini-1.5-pro-latest";
+            
+            // Initialize the chat
+            startButton.addEventListener('click', startChat);
+            userInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+            sendButton.addEventListener('click', sendMessage);
+            
+            // Image upload handling
+            imageButton.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', handleImageUpload);
+            
+            // Voice recognition setup
+            micButton.addEventListener('click', toggleVoiceRecognition);
+            
+            // Check if browser supports speech recognition
+            if ('webkitSpeechRecognition' in window) {
+                recognition = new webkitSpeechRecognition();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+                
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    userInput.value = transcript;
+                    isListening = false;
+                    micButton.classList.remove('active');
+                };
+                
+                recognition.onerror = function(event) {
+                    console.error('Speech recognition error', event.error);
+                    isListening = false;
+                    micButton.classList.remove('active');
+                    addBotMessage("Sorry, I couldn't understand your voice. Please try again or type your message.");
+                };
+                
+                recognition.onend = function() {
+                    if (isListening) {
+                        recognition.start(); // Restart if still listening
+                    }
+                };
+            } else {
+                micButton.disabled = true;
+                micButton.title = "Voice input not supported in your browser";
+            }
+            
+            // Start chat function
+            function startChat() {
+                userName = nameInput.value.trim();
+                apiKey = apiKeyInput.value.trim();
+                
+                if (!userName) {
+                    alert('Please enter your name');
+                    return;
+                }
+                
+                if (!apiKey) {
+                    alert('Please enter your Google AI Studio API key');
+                    return;
+                }
+                
+                // Hide welcome screen
+                welcomeScreen.style.display = 'none';
+                
+                // Enable chat
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                userInput.focus();
+                
+                // Add welcome message
+                addBotMessage(`Hello ${userName}! I'm Gemini, your AI assistant. You can:
+                \n• Type messages\n• Upload images (click camera icon)\n• Use voice input (microphone icon)\n• Tap the sound icon to hear my replies`);
+            }
+            
+            // Send message function
+            async function sendMessage() {
+                const message = userInput.value.trim();
+                
+                if (!message && !selectedImage) return;
+                
+                // Add user message to chat
+                if (message) {
+                    addUserMessage(message);
+                }
+                
+                // Show image preview if uploaded
+                if (selectedImage) {
+                    addImagePreview(selectedImage);
+                }
+                
+                userInput.value = '';
+                
+                // Show typing indicator
+                showTypingIndicator();
+                
+                try {
+                    const requestBody = {
+                        contents: []
+                    };
+                    
+                    // Add chat history if available
+                    if (chatHistory.length > 0) {
+                        requestBody.contents = [...chatHistory];
+                    }
+                    
+                    // Add current message parts
+                    const parts = [];
+                    
+                    if (message) {
+                        parts.push({ text: message });
+                    }
+                    
+                    if (selectedImage) {
+                        parts.push({
+                            inlineData: {
+                                mimeType: selectedImage.type,
+                                data: selectedImage.data
+                            }
+                        });
+                    }
+                    
+                    requestBody.contents.push({
+                        role: "user",
+                        parts: parts
+                    });
+                    
+                    // Call Gemini API
+                    const response = await callGeminiAPI(GEMINI_MODEL, requestBody);
+                    
+                    // Remove typing indicator
+                    removeTypingIndicator();
+                    
+                    // Clear selected image
+                    selectedImage = null;
+                    
+                    // Extract the AI's response
+                    let responseText = '';
+                    if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
+                        responseText = response.candidates[0].content.parts[0].text;
+                    } else {
+                        responseText = "I'm sorry, I couldn't process your request. Please try again.";
+                    }
+                    
+                    // Add bot message to chat
+                    addBotMessage(responseText);
+                    
+                    // Update chat history
+                    requestBody.contents.push({
+                        role: "model",
+                        parts: [{ text: responseText }]
+                    });
+                    
+                    chatHistory = requestBody.contents;
+                    
+                    // Keep chat history manageable
+                    if (chatHistory.length > 6) {
+                        chatHistory = chatHistory.slice(-6);
+                    }
+                    
+                } catch (error) {
+                    removeTypingIndicator();
+                    addBotMessage(`Sorry, I encountered an error: ${error.message}`);
+                    console.error('Error:', error);
+                    
+                    // Additional error guidance
+                    if (error.message.includes("API key not valid")) {
+                        addBotMessage("Please check your Google AI Studio API key is correct and has proper permissions.");
+                    }
+                }
+            }
+            
+            // Call Gemini API
+            async function callGeminiAPI(model, requestBody) {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
+                }
+                
+                return await response.json();
+            }
+            
+            // Handle image upload
+            function handleImageUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Convert image to base64
+                    const base64Data = e.target.result.split(',')[1];
+                    selectedImage = {
+                        type: file.type,
+                        data: base64Data
+                    };
+                    
+                    // Enable send button if there's an image
+                    sendButton.disabled = false;
+                    
+                    // Show preview in input
+                    userInput.placeholder = "Type a message about the image (optional)";
+                    userInput.focus();
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            // Toggle voice recognition
+            function toggleVoiceRecognition() {
+                if (!recognition) return;
+                
+                if (isListening) {
+                    recognition.stop();
+                    isListening = false;
+                    micButton.classList.remove('active');
+                    userInput.placeholder = "Type your message...";
+                } else {
+                    recognition.start();
+                    isListening = true;
+                    micButton.classList.add('active');
+                    userInput.placeholder = "Listening...";
+                }
+            }
+            
+            // Stop current speech
+            function stopSpeech() {
+                if (window.speechSynthesis) {
+                    speechSynthesis.cancel();
+                }
+                if (currentSpeech) {
+                    currentSpeech = null;
+                }
+            }
+            
+            // Helper functions for chat UI
+            function addUserMessage(text) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message user-message';
+                messageDiv.setAttribute('data-user', userName);
+                messageDiv.textContent = text;
+                chatMessages.appendChild(messageDiv);
+                scrollToBottom();
+            }
+            
+            function addImagePreview(imageData) {
+                const previewDiv = document.createElement('div');
+                previewDiv.className = 'message user-message';
+                previewDiv.setAttribute('data-user', userName);
+                previewDiv.innerHTML = `
+                    <div>Image uploaded</div>
+                    <img src="data:${imageData.type};base64,${imageData.data}" class="preview-image">
+                `;
+                chatMessages.appendChild(previewDiv);
+                scrollToBottom();
+            }
+            
+            function addBotMessage(text) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message bot-message';
+                messageDiv.innerHTML = `
+                    ${formatResponse(text)}
+                    <div class="message-actions">
+                        <button class="action-icon" onclick="speakText('${escapeTextForJS(text)}')" title="Read aloud">
+                            <i class="fas fa-volume-up"></i>
+                        </button>
+                        <button class="action-icon" onclick="stopSpeech()" title="Stop audio">
+                            <i class="fas fa-stop"></i>
+                        </button>
+                    </div>
+                `;
+                chatMessages.appendChild(messageDiv);
+                scrollToBottom();
+            }
+            
+            function showTypingIndicator() {
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'typing-indicator';
+                typingDiv.id = 'typingIndicator';
+                typingDiv.innerHTML = `
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                `;
+                chatMessages.appendChild(typingDiv);
+                scrollToBottom();
+            }
+            
+            function removeTypingIndicator() {
+                const typingIndicator = document.getElementById('typingIndicator');
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+                userInput.placeholder = "Type your message...";
+            }
+            
+            function scrollToBottom() {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            function formatResponse(text) {
+                // Simple markdown to HTML conversion
+                return text
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/\n/g, '<br>');
+            }
+            
+            function escapeTextForJS(text) {
+                return text
+                    .replace(/\\/g, '\\\\')
+                    .replace(/'/g, "\\'")
+                    .replace(/"/g, '\\"')
+                    .replace(/\n/g, '\\n');
+            }
+            
+            // Make functions available globally
+            window.speakText = function(text) {
+                stopSpeech();
+                if ('speechSynthesis' in window) {
+                    currentSpeech = new SpeechSynthesisUtterance(text);
+                    currentSpeech.rate = 1;
+                    currentSpeech.pitch = 1;
+                    currentSpeech.volume = 1;
+                    speechSynthesis.speak(currentSpeech);
+                } else {
+                    alert("Text-to-speech not supported in your browser");
+                }
+            };
+            
+            window.stopSpeech = stopSpeech;
+        });
+    </script>
+</body>
+</html>
